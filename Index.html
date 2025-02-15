@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Hub</title>
+    <style>
+        /* CSS Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .platforms {
+            margin-bottom: 20px;
+        }
+
+        .platform {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .platform:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .platform img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .platform span {
+            flex-grow: 1;
+            margin-left: 10px;
+            text-align: left;
+        }
+
+        .options-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: #666;
+            padding: 0 5px;
+        }
+
+        .options-btn:hover {
+            color: #333;
+        }
+
+        .options-menu {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .options-menu button {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            text-align: left;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .options-menu button:hover {
+            background-color: #f4f4f4;
+        }
+
+        .add-platform {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #platform-select {
+            flex-grow: 1;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        #add-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        #add-btn:hover {
+            background-color: #45a049;
+        }
+
+        iframe {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .open-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .open-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Social Media Hub</h1>
+        <div class="platforms">
+            <!-- Pre-added platforms -->
+            <div class="platform" data-url="https://www.facebook.com">
+                <img src="https://img.icons8.com/color/48/facebook.png" alt="Facebook">
+                <span>Facebook</span>
+                <button class="open-btn">Open</button>
+                <button class="options-btn">⋮</button>
+                <div class="options-menu">
+                    <button class="open-new-tab-btn">Open in New Tab</button>
+                    <button class="delete-btn">Delete</button>
+                </div>
+            </div>
+            <div class="platform" data-url="https://www.twitter.com">
+                <img src="https://img.icons8.com/color/48/twitter.png" alt="Twitter">
+                <span>Twitter</span>
+                <button class="open-btn">Open</button>
+                <button class="options-btn">⋮</button>
+                <div class="options-menu">
+                    <button class="open-new-tab-btn">Open in New Tab</button>
+                    <button class="delete-btn">Delete</button>
+                </div>
+            </div>
+            <div class="platform" data-url="https://www.instagram.com">
+                <img src="https://img.icons8.com/color/48/instagram-new.png" alt="Instagram">
+                <span>Instagram</span>
+                <button class="open-btn">Open</button>
+                <button class="options-btn">⋮</button>
+                <div class="options-menu">
+                    <button class="open-new-tab-btn">Open in New Tab</button>
+                    <button class="delete-btn">Delete</button>
+                </div>
+            </div>
+        </div>
+        <div class="add-platform">
+            <select id="platform-select">
+                <option value="https://www.linkedin.com">LinkedIn</option>
+                <option value="https://www.youtube.com">YouTube</option>
+                <option value="https://www.reddit.com">Reddit</option>
+                <option value="https://www.pinterest.com">Pinterest</option>
+                <option value="https://www.tiktok.com">TikTok</option>
+            </select>
+            <button id="add-btn">Add Platform</button>
+        </div>
+        <iframe id="social-iframe" src="" style="display: none;"></iframe>
+    </div>
+
+    <script>
+        // JavaScript Functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            const platformsContainer = document.querySelector('.platforms');
+            const platformSelect = document.getElementById('platform-select');
+            const addButton = document.getElementById('add-btn');
+            const iframe = document.getElementById('social-iframe');
+
+            // Function to open platform in iframe
+            function openPlatform(url) {
+                iframe.src = url;
+                iframe.style.display = 'block';
+            }
+
+            // Function to open platform in new tab
+            function openInNewTab(url) {
+                window.open(url, '_blank');
+            }
+
+            // Function to delete platform
+            function deletePlatform(button) {
+                const platformDiv = button.closest('.platform');
+                const platformUrl = platformDiv.getAttribute('data-url');
+                const platformName = platformDiv.querySelector('span').textContent;
+
+                // Add the deleted platform back to the dropdown
+                const option = document.createElement('option');
+                option.value = platformUrl;
+                option.textContent = platformName;
+                platformSelect.appendChild(option);
+
+                // Remove the platform from the list
+                platformDiv.remove();
+            }
+
+            // Event delegation for dynamically added elements
+            platformsContainer.addEventListener('click', function (e) {
+                const target = e.target;
+
+                // Handle Open Button
+                if (target.classList.contains('open-btn')) {
+                    const platformDiv = target.closest('.platform');
+                    const url = platformDiv.getAttribute('data-url');
+                    openPlatform(url);
+                }
+
+                // Handle Options Button
+                if (target.classList.contains('options-btn')) {
+                    const optionsMenu = target.nextElementSibling;
+                    optionsMenu.style.display = optionsMenu.style.display === 'block' ? 'none' : 'block';
+                }
+
+                // Handle Open in New Tab Button
+                if (target.classList.contains('open-new-tab-btn')) {
+                    const platformDiv = target.closest('.platform');
+                    const url = platformDiv.getAttribute('data-url');
+                    openInNewTab(url);
+                }
+
+                // Handle Delete Button
+                if (target.classList.contains('delete-btn')) {
+                    deletePlatform(target);
+                }
+            });
+
+            // Close options menu when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!e.target.classList.contains('options-btn')) {
+                    document.querySelectorAll('.options-menu').forEach(menu => {
+                        menu.style.display = 'none';
+                    });
+                }
+            });
+
+            // Function to add platform
+            addButton.addEventListener('click', function () {
+                const selectedPlatform = platformSelect.value;
+                const platformName = platformSelect.options[platformSelect.selectedIndex].text;
+
+                // Remove the selected platform from the dropdown
+                platformSelect.remove(platformSelect.selectedIndex);
+
+                const platformDiv = document.createElement('div');
+                platformDiv.classList.add('platform');
+                platformDiv.setAttribute('data-url', selectedPlatform);
+
+                const platformImg = document.createElement('img');
+                platformImg.src = `https://img.icons8.com/color/48/${platformName.toLowerCase()}.png`;
+                platformImg.alt = platformName;
+
+                const platformSpan = document.createElement('span');
+                platformSpan.textContent = platformName;
+
+                const openBtn = document.createElement('button');
+                openBtn.classList.add('open-btn');
+                openBtn.textContent = 'Open';
+
+                const optionsBtn = document.createElement('button');
+                optionsBtn.classList.add('options-btn');
+                optionsBtn.textContent = '⋮';
+
+                const optionsMenu = document.createElement('div');
+                optionsMenu.classList.add('options-menu');
+                optionsMenu.innerHTML = `
+                    <button class="open-new-tab-btn">Open in New Tab</button>
+                    <button class="delete-btn">Delete</button>
+                `;
+
+                platformDiv.appendChild(platformImg);
+                platformDiv.appendChild(platformSpan);
+                platformDiv.appendChild(openBtn);
+                platformDiv.appendChild(optionsBtn);
+                platformDiv.appendChild(optionsMenu);
+
+                platformsContainer.appendChild(platformDiv);
+            });
+        });
+    </script>
+</body>
+  </html>
+  
