@@ -1,222 +1,293 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Image Enhancer</title>
+    <title>Text to Audio Converter</title>
     <style>
-        :root {
-            --primary: #2ecc71;
-            --secondary: #27ae60;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
-
-        .ad {
-            background: #34495e;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            margin: 10px 0;
-        }
-
-        #container {
-            max-width: 800px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        #preview-canvas, #output-canvas {
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             width: 100%;
-            height: auto;
-            border: 2px solid var(--primary);
+            max-width: 500px;
+            animation: fadeIn 0.5s ease-in-out;
         }
-
-        .controls {
-            margin: 20px 0;
-            padding: 15px;
-            background: #ecf0f1;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 2px solid #ddd;
             border-radius: 8px;
+            resize: none;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
         }
-
-        .slider-container {
-            margin: 15px 0;
+        textarea:focus {
+            border-color: #007bff;
+            outline: none;
         }
-
-        button {
-            background: var(--primary);
-            color: white;
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        select, button {
+            padding: 10px;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s;
         }
-
+        select {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            flex: 1;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            flex: 1;
+        }
         button:hover {
-            background: var(--secondary);
+            background: #0056b3;
         }
-
-        input[type="range"] {
-            width: 200px;
-            margin: 0 10px;
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
         }
-
-        .hidden {
+        #audio-player {
+            width: 100%;
+            margin-top: 20px;
             display: none;
+        }
+        .loader {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <!-- Ad Placements -->
-    <div class="ad" id="top-ad">Top Ad Space (728x90)</div>
-    
-    <div id="container">
-        <input type="file" id="upload" accept="image/*">
+    <div class="container">
+        <h1>Text to Audio Converter</h1>
+        <textarea id="text-input" placeholder="Enter your text here..."></textarea>
         <div class="controls">
-            <button onclick="enhanceImage()">AI Enhance</button>
-            <div class="slider-container">
-                Background Blur: <input type="range" id="blur-slider" min="0" max="15" value="0">
-            </div>
-            <button onclick="downloadHD()" id="download-btn" class="hidden">Download HD</button>
+            <select id="language-select">
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+            </select>
+            <select id="voice-select">
+                <option value="m1">Male 1</option>
+                <option value="f1">Female 1</option>
+                <option value="m2">Male 2</option>
+                <option value="f2">Female 2</option>
+            </select>
+            <button id="play-button" disabled>Play</button>
+            <button id="download-button" disabled>Download MP3</button>
         </div>
-        
-        <canvas id="preview-canvas"></canvas>
-        <canvas id="output-canvas"></canvas>
+        <div id="loader" class="loader"></div>
+        <audio id="audio-player" controls></audio>
     </div>
 
-    <div class="ad" id="middle-ad">Middle Ad Space (300x250)</div>
-    <div class="ad" id="lower-ad">Lower Ad Space (728x90)</div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
-    <script async src="https://docs.opencv.org/master/opencv.js" onload="onOpenCvReady();"></script>
+    <!-- External libraries (assumed to be in the same directory) -->
+    <script src="mespeak.js"></script>
+    <script src="lame.min.js"></script>
 
     <script>
-        let net;
-        let originalMat;
-        let enhancedMat;
-        let processing = false;
+        // DOM elements
+        const textInput = document.getElementById("text-input");
+        const languageSelect = document.getElementById("language-select");
+        const voiceSelect = document.getElementById("voice-select");
+        const playButton = document.getElementById("play-button");
+        const downloadButton = document.getElementById("download-button");
+        const audioPlayer = document.getElementById("audio-player");
+        const loader = document.getElementById("loader");
 
-        async function loadModels() {
-            net = await blazeface.load();
+        // Voice loading status
+        let voicesLoaded = { en: false, hi: false };
+
+        // Function to show/hide loader
+        function toggleLoader(show) {
+            loader.style.display = show ? "block" : "none";
+            playButton.disabled = show || !voicesLoaded[languageSelect.value];
+            downloadButton.disabled = show || !voicesLoaded[languageSelect.value];
         }
 
-        function onOpenCvReady() {
-            console.log("OpenCV loaded");
-            loadModels();
-        }
-
-        document.getElementById('upload').addEventListener('change', function(e) {
-            if(!cv) return alert("OpenCV not loaded yet");
-            
-            const file = e.target.files[0];
-            const reader = new FileReader();
-
-            reader.onload = async function(e) {
-                const img = new Image();
-                img.src = e.target.result;
-                
-                img.onload = async function() {
-                    const canvas = document.getElementById('preview-canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    
-                    originalMat = cv.imread(canvas);
-                    document.getElementById('download-btn').classList.remove('hidden');
-                };
-            };
-            reader.readAsDataURL(file);
+        // Initialize meSpeak and load voices
+        meSpeak.loadConfig("mespeak_config.json");
+        meSpeak.loadVoice("voices/en/en-us", function() {
+            voicesLoaded.en = true;
+            console.log("English voice loaded");
+            if (languageSelect.value === "en") {
+                playButton.disabled = false;
+                downloadButton.disabled = false;
+            }
+        });
+        meSpeak.loadVoice("voices/hi", function() {
+            voicesLoaded.hi = true;
+            console.log("Hindi voice loaded");
+            if (languageSelect.value === "hi") {
+                playButton.disabled = false;
+                downloadButton.disabled = false;
+            }
         });
 
-        async function enhanceImage() {
-            if(processing) return;
-            processing = true;
-            
-            // Basic enhancement using OpenCV
-            enhancedMat = new cv.Mat();
-            const kernel = new cv.Mat.fromArray(3, 3, cv.CV_32FC1, [
-                0, -1, 0,
-                -1, 5, -1,
-                0, -1, 0
-            ]);
-            
-            cv.filter2D(originalMat, enhancedMat, -1, kernel);
-            kernel.delete();
-            
-            // Apply histogram equalization
-            cv.cvtColor(enhancedMat, enhancedMat, cv.COLOR_RGBA2RGB);
-            let channels = new cv.MatVector();
-            cv.split(enhancedMat, channels);
-            for(let i = 0; i < channels.size(); i++) {
-                cv.equalizeHist(channels.get(i), channels.get(i));
+        // Update button state when language changes
+        languageSelect.addEventListener("change", () => {
+            playButton.disabled = !voicesLoaded[languageSelect.value];
+            downloadButton.disabled = !voicesLoaded[languageSelect.value];
+            if (!voicesLoaded[languageSelect.value]) {
+                alert("Please wait, the selected language voice is still loading.");
             }
-            cv.merge(channels, enhancedMat);
-            channels.delete();
-            
-            updateBlur();
-            processing = false;
+        });
+
+        // Function to parse WAV and extract PCM data for MP3 encoding
+        function parseWav(wavBuffer) {
+            const dv = new DataView(wavBuffer);
+            let offset = 12; // Skip RIFF header
+            while (dv.getUint32(offset, true) !== 0x20746d66) { // "fmt "
+                offset += 8 + dv.getUint32(offset + 4, true);
+            }
+            offset += 8; // Skip "fmt " and size
+            const numChannels = dv.getUint16(offset + 2, true);
+            const sampleRate = dv.getUint32(offset + 4, true);
+            offset += 16; // Skip to data chunk
+            while (dv.getUint32(offset, true) !== 0x61746164) { // "data"
+                offset += 8 + dv.getUint32(offset + 4, true);
+            }
+            offset += 4; // Skip "data"
+            const dataSize = dv.getUint32(offset, true);
+            offset += 4;
+            const numSamples = dataSize / 2; // 16-bit samples
+            const audioData = new Int16Array(numSamples);
+            for (let i = 0; i < numSamples; i++) {
+                audioData[i] = dv.getInt16(offset + i * 2, true);
+            }
+            return { sampleRate, numChannels, audioData };
         }
 
-        async function updateBlur() {
-            if(!enhancedMat || processing) return;
-            processing = true;
-            
-            const blurValue = parseInt(document.getElementById('blur-slider').value);
-            const faces = await detectFaces();
-            
-            // Create mask for faces
-            let mask = new cv.Mat.zeros(enhancedMat.rows, enhancedMat.cols, cv.CV_8UC1);
-            faces.forEach(face => {
-                const x = face.topLeft[0] * enhancedMat.cols;
-                const y = face.topLeft[1] * enhancedMat.rows;
-                const width = face.bottomRight[0] * enhancedMat.cols - x;
-                const height = face.bottomRight[1] * enhancedMat.rows - y;
-                
-                let rect = new cv.Rect(x, y, width, height);
-                cv.rectangle(mask, rect, new cv.Scalar(255), -1);
-            });
+        // Play audio
+        playButton.addEventListener("click", () => {
+            const text = textInput.value.trim();
+            if (!text) {
+                alert("Please enter some text!");
+                return;
+            }
+            if (!voicesLoaded[languageSelect.value]) {
+                alert("Voice for the selected language is not yet loaded. Please wait.");
+                return;
+            }
+            toggleLoader(true);
+            try {
+                // Use meSpeak's built-in playback
+                meSpeak.speak(text, {
+                    voice: languageSelect.value,
+                    variant: voiceSelect.value,
+                    speed: 1,
+                    pitch: 50,
+                    callback: function() {
+                        toggleLoader(false);
+                    }
+                });
+                // Optionally, generate WAV for <audio> element
+                const wavData = meSpeak.speak(text, {
+                    voice: languageSelect.value,
+                    variant: voiceSelect.value,
+                    rawdata: "ArrayBuffer"
+                });
+                const wavBlob = new Blob([wavData], { type: "audio/wav" });
+                const url = URL.createObjectURL(wavBlob);
+                audioPlayer.src = url;
+                audioPlayer.style.display = "block";
+                audioPlayer.play();
+                audioPlayer.onended = () => {
+                    URL.revokeObjectURL(url);
+                    toggleLoader(false);
+                };
+            } catch (error) {
+                alert("Error playing audio: " + error.message);
+                toggleLoader(false);
+            }
+        });
 
-            // Apply blur to background
-            let blurred = new cv.Mat();
-            cv.GaussianBlur(enhancedMat, blurred, new cv.Size(blurValue*2+1, blurValue*2+1), 0);
-            
-            // Combine images
-            let result = new cv.Mat();
-            cv.copyTo(blurred, result, mask);
-            cv.copyTo(enhancedMat, result, mask.not());
-            
-            cv.imshow('output-canvas', result);
-            
-            // Cleanup
-            mask.delete();
-            blurred.delete();
-            result.delete();
-            processing = false;
-        }
-
-        async function detectFaces() {
-            const canvas = document.createElement('canvas');
-            cv.imshow(canvas, enhancedMat);
-            
-            const img = new Image();
-            img.src = canvas.toDataURL();
-            await new Promise(resolve => img.onload = resolve);
-            
-            return await net.estimateFaces(img, false);
-        }
-
-        function downloadHD() {
-            const canvas = document.getElementById('output-canvas');
-            const link = document.createElement('a');
-            link.download = 'enhanced-image.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-
-        // Update blur in real-time
-        document.getElementById('blur-slider').addEventListener('input', updateBlur);
+        // Download MP3
+        downloadButton.addEventListener("click", () => {
+            const text = textInput.value.trim();
+            if (!text) {
+                alert("Please enter some text!");
+                return;
+            }
+            if (!voicesLoaded[languageSelect.value]) {
+                alert("Voice for the selected language is not yet loaded. Please wait.");
+                return;
+            }
+            toggleLoader(true);
+            try {
+                const wavData = meSpeak.speak(text, {
+                    voice: languageSelect.value,
+                    variant: voiceSelect.value,
+                    rawdata: "ArrayBuffer"
+                });
+                const { sampleRate, numChannels, audioData } = parseWav(wavData);
+                const mp3Encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 128);
+                const mp3Data = [];
+                const blockSize = 1152;
+                for (let i = 0; i < audioData.length; i += blockSize) {
+                    const chunk = audioData.subarray(i, i + blockSize);
+                    const mp3buf = mp3Encoder.encodeBuffer(chunk);
+                    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                }
+                const mp3buf = mp3Encoder.flush();
+                if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                const mp3Blob = new Blob(mp3Data, { type: "audio/mp3" });
+                const url = URL.createObjectURL(mp3Blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "audio.mp3";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                toggleLoader(false);
+            } catch (error) {
+                alert("Error generating MP3: " + error.message);
+                toggleLoader(false);
+            }
+        });
     </script>
 </body>
 </html>
